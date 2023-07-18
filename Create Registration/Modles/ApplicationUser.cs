@@ -9,5 +9,8 @@ namespace Create_Registration.Modles
         public string FirstName { get; set; }
         [Required , MinLength(50)]  
         public string LastName { get; set; } = string.Empty;
+
+        public List<RefreshToken>? RefreshTokens { get; set; }
+
     }
 }

@@ -20,14 +20,18 @@ namespace Create_Registration.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> RegisterAsync ([FromBody]RegisterModel model)
         {
-            if (!ModelState.IsValid) 
-                return BadRequest(ModelState);  
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            var regist = await _authService.RegisterAsync(model);
-            if (regist.IsAuthenticated)
-                return BadRequest(regist.Message);
+            var result = await _authService.RegisterAsync(model);
 
-            return Ok(regist);  
+            if (!result.IsAuthenticated)
+                return BadRequest(result.Message);
+
+            SetRefreshTokenInCookie(result.RefreshToken, result.RefreshTokenExpiration);
+
+            return Ok(result);
+        
         }
 
         [HttpPost("token")]
@@ -40,7 +44,11 @@ namespace Create_Registration.Controllers
             if (regist.IsAuthenticated)
                 return BadRequest(regist.Message);
 
-            return Ok(regist);
+            if (!string.IsNullOrEmpty(regist.RefreshToken))
+                SetRefreshTokenInCookie(regist.RefreshToken, regist.RefreshTokenExpiration);
+
+            return Ok(new { Token = regist.Token, Exception = regist.ExpiresOn });
+
         }
 
         [HttpPost("addroles")]
@@ -54,6 +62,48 @@ namespace Create_Registration.Controllers
                 return BadRequest(regist);
 
             return Ok(model);
+        }
+
+        private void SetRefreshTokenInCookie(string refreshToken, DateTime expires)
+        {
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = expires.ToLocalTime(),
+            };
+
+            Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+        }
+
+        [HttpGet("refreshToken")]
+        public async Task<IActionResult> RefreshToken()
+        {
+            var refreshToken = Request.Cookies["refreshToken"];
+
+            var result = await _authService.RefreshTokenAsync(refreshToken);
+
+            if (!result.IsAuthenticated)
+                return BadRequest(result);
+
+            SetRefreshTokenInCookie(result.RefreshToken, result.RefreshTokenExpiration);
+
+            return Ok(result);
+        }
+
+        [HttpPost("revokeToken")]
+        public async Task<IActionResult> RevokeToken([FromBody] RevokeToken model)
+        {
+            var token = model.Token ?? Request.Cookies["refreshToken"];
+
+            if (string.IsNullOrEmpty(token))
+                return BadRequest("Token is required!");
+
+            var result = await _authService.RevokeTokenAsync(token);
+
+            if (!result)
+                return BadRequest("Token is invalid!");
+
+            return Ok();
         }
 
     }

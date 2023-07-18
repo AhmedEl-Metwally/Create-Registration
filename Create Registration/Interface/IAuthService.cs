@@ -7,5 +7,7 @@ namespace Create_Registration.Interface
         Task<AuthModel> RegisterAsync(RegisterModel model);
         Task<AuthModel> GetTokenAsync(TokenRegisterModel model);
         Task<string> AddRolesAsync(AddRolesModel model);
+        Task<AuthModel> RefreshTokenAsync(string token);
+        Task<bool> RevokeTokenAsync(string token);
     }
 }
