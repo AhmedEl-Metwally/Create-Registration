@@ -2,10 +2,12 @@ using Create_Registration.Context;
 using Create_Registration.Interface;
 using Create_Registration.Modles;
 using Create_Registration.Services;
+using Create_Registration.Setting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Configuration;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,7 +27,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
-builder.Services.AddScoped<IAuthService, AuthService>(); 
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IMailService, MailService>();
+
+builder.Services.AddScoped<MailSetting, MailSetting>();
 
 builder.Services.AddAuthentication(options =>
 {
